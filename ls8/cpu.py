@@ -1,6 +1,10 @@
 """CPU functionality."""
-
 import sys
+
+LDI = 0b10000010
+PRN = 0b01000111
+HLT = 0b00000001
+MUL = 0b10100010
 
 class CPU:
     """Main CPU class."""
@@ -11,6 +15,8 @@ class CPU:
         self.registers = [0] * 8 # R0-R7
         self.pc = 0 # Program Counter (address of the currently executing instructions)
 
+        # variables = registers
+
     # should accept the address to read and return the value stored there
     def ram_read(self, address):
         return self.ram[address]
@@ -20,25 +26,45 @@ class CPU:
         self.ram[address] = value
 
     def load(self):
-        """Load a program into memory."""
+        try:
+            address = 0
+            with open(sys.argv[1]) as file:
+                for line in file:
+                    split_file = line.split('#')
+                    value = split_file[0].strip()
+                    if value == "":
+                        continue
 
-        address = 0
+                    try:
+                        instruction = int(value, 2) # Convert binary string to int
+                    except ValueError:
+                        print(f"Invalid number: {value}")
+                        sys.exit(1)
 
-        # For now, we've just hardcoded a program:
+                    self.ram[address] = instruction
+                    address += 1
 
-        program = [
-            # From print8.ls8
-            0b10000010, # LDI R0,8
-            0b00000000,
-            0b00001000,
-            0b01000111, # PRN R0
-            0b00000000,
-            0b00000001, # HLT
-        ]
+        except FileNotFoundError:
+            print(f"{sys.argv[0]} {sys.argv[1]} file not found")
+            sys.exit()
 
-        for instruction in program:
-            self.ram[address] = instruction
-            address += 1
+        # address = 0
+
+        # # For now, we've just hardcoded a program:
+
+        # program = [
+        #     # From print8.ls8
+        #     0b10000010, # LDI R0,8
+        #     0b00000000,
+        #     0b00001000,
+        #     0b01000111, # PRN R0
+        #     0b00000000,
+        #     0b00000001, # HLT
+        # ]
+
+        # for instruction in program:
+        #     self.ram[address] = instruction
+        #     address += 1
 
 
     # def alu(self, op, reg_a, reg_b):
@@ -89,6 +115,21 @@ class CPU:
                 reg_location = self.ram[pc + 1]
                 print(self.ram_read(reg_location))
                 pc += 2
+
+            # elif instruction == 0b10100000:
+            #     reg_location1 = self.ram[pc + 1]
+            #     reg_location2 = self.ram[pc + 2]
+            #     new_num = self.ram_read(reg_location1) * self.ram_read(reg_location2)
+            #     print(new_num)
+            #     self.ram_write(new_num, self.ram[pc + 3])
+            #     pc += 4
+
+            elif instruction == 0b10100010:
+                reg_location1 = self.ram[pc + 1] # get the first number
+                reg_location2 = self.ram[pc + 2] # get the second number
+                new_num = self.ram_read(reg_location1) * self.ram_read(reg_location2)
+                self.ram_write(new_num, self.ram[pc +1]) # overwrite the first address value with new number
+                pc += 3
             
             elif instruction == 0b00000001:
                 running = False
