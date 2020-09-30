@@ -105,17 +105,18 @@ class CPU:
             instruction = self.ram_read(pc)
             # print(instruction)
 
-            if instruction == 0b10000010:
+            if instruction == LDI:
                 reg_location = self.ram[pc + 1]
                 num = self.ram[pc +2]
                 self.ram_write(num, reg_location)
                 pc += 3
 
-            elif instruction == 0b01000111:
+            elif instruction == PRN:
                 reg_location = self.ram[pc + 1]
                 print(self.ram_read(reg_location))
                 pc += 2
 
+            # For Add but later
             # elif instruction == 0b10100000:
             #     reg_location1 = self.ram[pc + 1]
             #     reg_location2 = self.ram[pc + 2]
@@ -124,14 +125,14 @@ class CPU:
             #     self.ram_write(new_num, self.ram[pc + 3])
             #     pc += 4
 
-            elif instruction == 0b10100010:
+            elif instruction == MUL:
                 reg_location1 = self.ram[pc + 1] # get the first number
                 reg_location2 = self.ram[pc + 2] # get the second number
                 new_num = self.ram_read(reg_location1) * self.ram_read(reg_location2)
                 self.ram_write(new_num, self.ram[pc +1]) # overwrite the first address value with new number
                 pc += 3
             
-            elif instruction == 0b00000001:
+            elif instruction == HLT:
                 running = False
                 pc += 1
 
