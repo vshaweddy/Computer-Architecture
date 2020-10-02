@@ -30,8 +30,13 @@ class CPU:
             address = 0
             with open(sys.argv[1]) as file:
                 for line in file:
+                    # Split the current line on the # symbol
                     split_file = line.split('#')
+
+                    # Removes whitespace and \n character
                     value = split_file[0].strip()
+
+                    # Make sure that the value before the # symbol is not empty
                     if value == "":
                         continue
 
@@ -46,7 +51,7 @@ class CPU:
 
         except FileNotFoundError:
             print(f"{sys.argv[0]} {sys.argv[1]} file not found")
-            sys.exit()
+            sys.exit(2)
 
         # address = 0
 
