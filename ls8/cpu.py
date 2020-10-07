@@ -111,17 +111,16 @@ class CPU:
         while running:
             # read line by line from memory
             instruction = self.ram_read(self.pc)
-            # print(instruction)
 
-            op_a = self.ram_read(self.pc + 1)
-            op_b = self.ram_read(self.pc + 2)
+            operand_a = self.ram_read(self.pc + 1)
+            operand_b = self.ram_read(self.pc + 2)
 
             if instruction == LDI:
-                self.registers[op_a] = op_b
+                self.registers[operand_a] = operand_b
                 self.pc += 3
 
             elif instruction == PRN:
-                print(self.registers[op_a])
+                print(self.registers[operand_a])
                 self.pc += 2
 
             elif instruction == PUSH:
@@ -152,7 +151,7 @@ class CPU:
 
             elif instruction == MUL:
                 # overwrite the first address value with new number
-                self.registers[op_a] = self.registers[op_a] * self.registers[op_b] 
+                self.registers[operand_a] = self.registers[operand_a] * self.registers[operand_b] 
                 self.pc += 3
             
             elif instruction == HLT:
