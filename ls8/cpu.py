@@ -18,8 +18,58 @@ class CPU:
         self.registers = [0] * 8 # R0-R7
         self.registers[SP] = 0xF4
         self.pc = 0 # Program Counter (address of the currently executing instructions)
+        self.branchtable = {}
+        self.branchtable[LDI] = self.handle_ldi
+        self.branchtable[PRN] = self.handle_prn
+        self.branchtable[PUSH] = self.handle_push
+        self.branchtable[POP] = self.handle_pop
+        self.branchtable[MUL] = self.handle_mul
+        self.branchtable[HLT] = self.handle_hlt
 
         # variables = registers
+
+    def handle_hlt(self, operand_a, operand_b):
+        running = False
+        self.pc += 1
+
+    def handle_ldi(self, operand_a, operand_b):
+        self.registers[operand_a] = operand_b
+        self.pc += 3
+
+    def handle_prn(self, operand_a, operand_b):
+        print(self.registers[operand_a])
+        self.pc += 2
+
+    def handle_push(self, operand_a, operand_b):
+        # decrement the stack pointer (SP)
+        self.registers[SP] -= 1
+                
+        given_register = self.ram_read(self.pc + 1)
+        value_in_register = self.registers[given_register]
+
+        # write the value of the given register to memory AT the SP location
+        # self.ram_write(value_in_register, self.registers[SP])
+        top_stack_address = self.registers[SP]
+        self.ram[top_stack_address] = value_in_register
+
+        # increment pc 
+        self.pc += 2
+
+    def handle_pop(self, operand_a, operand_b):
+        given_register = self.ram_read(self.pc + 1)
+
+        # Write the value in the memory at the top of the stack to the given register
+        value_from_memory = self.ram_read(self.registers[SP])
+        self.registers[given_register] = value_from_memory
+
+        # increment stack pointer
+        self.registers[SP] += 1
+        self.pc += 2
+
+    def handle_mul(self, operand_a, operand_b):
+        # overwrite the first address value with new number
+        self.registers[operand_a] = self.registers[operand_a] * self.registers[operand_b] 
+        self.pc += 3
 
     # should accept the address to read and return the value stored there
     def ram_read(self, address):
@@ -107,7 +157,7 @@ class CPU:
 
     def run(self):
         running = True
-        
+ 
         while running:
             # read line by line from memory
             instruction = self.ram_read(self.pc)
@@ -115,48 +165,8 @@ class CPU:
             operand_a = self.ram_read(self.pc + 1)
             operand_b = self.ram_read(self.pc + 2)
 
-            if instruction == LDI:
-                self.registers[operand_a] = operand_b
-                self.pc += 3
-
-            elif instruction == PRN:
-                print(self.registers[operand_a])
-                self.pc += 2
-
-            elif instruction == PUSH:
-                # decrement the stack pointer (SP)
-                self.registers[SP] -= 1
-                
-                given_register = self.ram_read(self.pc + 1)
-                value_in_register = self.registers[given_register]
-
-                # write the value of the given register to memory AT the SP location
-                # self.ram_write(value_in_register, self.registers[SP])
-                top_stack_address = self.registers[SP]
-                self.ram[top_stack_address] = value_in_register
-
-                # increment pc 
-                self.pc += 2
-
-            elif instruction == POP:
-                given_register = self.ram_read(self.pc + 1)
-
-                # Write the value in the memory at the top of the stack to the given register
-                value_from_memory = self.ram_read(self.registers[SP])
-                self.registers[given_register] = value_from_memory
-
-                # increment stack pointer
-                self.registers[SP] += 1
-                self.pc += 2
-
-            elif instruction == MUL:
-                # overwrite the first address value with new number
-                self.registers[operand_a] = self.registers[operand_a] * self.registers[operand_b] 
-                self.pc += 3
-            
-            elif instruction == HLT:
-                running = False
-                self.pc += 1
+            if instruction in self.branchtable:
+                self.branchtable[instruction](operand_a, operand_b)
 
             # Exit if it's crashed
             else:
