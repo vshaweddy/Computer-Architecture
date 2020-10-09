@@ -1,5 +1,6 @@
 """CPU functionality."""
 import sys
+import os.path
 
 SP = 7 # always at the end of the register to hold the current pointer
 LDI = 0b10000010
@@ -8,6 +9,9 @@ HLT = 0b00000001
 MUL = 0b10100010
 PUSH = 0b01000101
 POP = 0b01000110
+CALL = 0b01010000
+RET = 0b00010001
+ADD =  0b10100000
 
 class CPU:
     """Main CPU class."""
@@ -25,6 +29,10 @@ class CPU:
         self.branchtable[POP] = self.handle_pop
         self.branchtable[MUL] = self.handle_mul
         self.branchtable[HLT] = self.handle_hlt
+        self.branchtable[ADD] = self.handle_add
+        self.branchtable[CALL] = self.handle_call
+        self.branchtable[RET] = self.handle_ret
+        self.branchtable[MUL] = self.handle_mul
 
         # variables = registers
 
@@ -70,6 +78,37 @@ class CPU:
         # overwrite the first address value with new number
         self.registers[operand_a] = self.registers[operand_a] * self.registers[operand_b] 
         self.pc += 3
+
+    def handle_add(self, operand_a, operand_b):
+        self.registers[operand_a] += self.registers[operand_b]
+        self.pc += 3
+
+    def handle_call(self, operand_a, operand_b):
+        # decrement the stack pointer
+        self.registers[SP] -= 1
+        
+        # address of the next instruction 
+        next_address_instruction = self.pc + 2
+
+        # store it in the stack
+        self.ram[self.registers[SP]] = next_address_instruction
+
+        # find the register that we'll be calling from and the address that is in that register
+        # register_to_call = self.ram[self.pc + 1]
+        next_address = self.registers[operand_a]
+
+        # set the pc to the next address
+        self.pc = next_address
+
+    def handle_ret(self, operand_a, operand_b):
+        # pop the stack pointer from the reg
+        address_to_pop = self.ram[SP]
+
+        # set the pc to that address
+        self.pc = address_to_pop
+
+        # increment the sp after popping
+        self.registers[SP] += 1
 
     # should accept the address to read and return the value stored there
     def ram_read(self, address):
