@@ -12,6 +12,10 @@ POP = 0b01000110
 CALL = 0b01010000
 RET = 0b00010001
 ADD =  0b10100000
+CMP = 0b10100111 # ALU OP
+JMP = 0b01010100 # PC MUTATOR
+JEQ = 0b01010101 # PC MUTATOR
+JNE = 0b01010110 # PC MUTATOR
 
 class CPU:
     """Main CPU class."""
@@ -35,6 +39,10 @@ class CPU:
         self.branchtable[CALL] = self.handle_call
         self.branchtable[RET] = self.handle_ret
         self.branchtable[MUL] = self.handle_mul
+        self.branchtable[CMP] = self.handle_cmp
+        self.branchtable[JMP] = self.handle_jmp
+        self.branchtable[JEQ] = self.handle_jeq
+        self.branchtable[JNE] = self.handle_jne
 
         # variables = registers
 
@@ -58,9 +66,6 @@ class CPU:
         value_in_register = self.registers[given_register]
 
         # write the value of the given register to memory AT the SP location
-        # self.ram_write(value_in_register, self.registers[SP])
-        # self.ram[self.registers[self.sp]] = value_in_register
-
         top_stack_address = self.registers[SP]
         self.ram[top_stack_address] = value_in_register
 
@@ -97,7 +102,6 @@ class CPU:
         self.ram[self.registers[SP]] = next_address_instruction
 
         # find the register that we'll be calling from and the address that is in that register
-        # register_to_call = self.ram[self.pc + 1]
         next_address = self.registers[given_register]
 
         # set the pc to the next address
@@ -112,6 +116,29 @@ class CPU:
 
         # increment the sp after popping
         self.registers[SP] += 1
+
+    # compare the values in two registers
+    def handle_cmp(self, operand_a, operand_b):
+        self.alu("CMP", operand_a, operand_b)
+        self.pc += 3
+
+    # jump to the address that stored in the given register
+    def handle_jmp(self, operand_a, operand_b):
+        self.pc = self.registers[operand_a]
+
+    # if equal, jump to the address in the given register
+    def handle_jeq(self, operand_a, operand_b):
+        if self.flag == 0b00000001:
+            self.pc = self.registers[operand_a]
+        else:
+            self.pc += 2
+
+    # if E flag is clear (false, 0), jump to the address in the given register
+    def handle_jne(self, operand_a, operand_b):
+        if self.flag != 0b00000001:
+            self.pc = self.registers[operand_a]
+        else:
+            self.pc += 2
 
     # should accept the address to read and return the value stored there
     def ram_read(self, address):
@@ -154,7 +181,16 @@ class CPU:
 
         if op == "ADD":
             self.registers[reg_a] += self.registers[reg_b]
-        #elif op == "SUB": etc
+        elif op == "CMP":
+            if self.registers[reg_a] < self.registers[reg_b]:
+                # less than flag
+                self.flag = 0b00000100 
+            if self.registers[reg_a] > self.registers[reg_b]:
+                # greater than flag
+                self.flag = 0b00000010 
+            if self.registers[reg_a] == self.registers[reg_b]:
+                # equal flag
+                self.flag = 0b00000001 
         else:
             raise Exception("Unsupported ALU operation")
 
