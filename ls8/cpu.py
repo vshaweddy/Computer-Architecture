@@ -22,6 +22,8 @@ class CPU:
         self.registers = [0] * 8 # R0-R7
         self.registers[SP] = 0xF4
         self.pc = 0 # Program Counter (address of the currently executing instructions)
+        self.running = False
+        
         self.branchtable = {}
         self.branchtable[LDI] = self.handle_ldi
         self.branchtable[PRN] = self.handle_prn
@@ -37,7 +39,7 @@ class CPU:
         # variables = registers
 
     def handle_hlt(self, operand_a, operand_b):
-        running = False
+        self.running = False
         self.pc += 1
 
     def handle_ldi(self, operand_a, operand_b):
@@ -57,6 +59,8 @@ class CPU:
 
         # write the value of the given register to memory AT the SP location
         # self.ram_write(value_in_register, self.registers[SP])
+        # self.ram[self.registers[self.sp]] = value_in_register
+
         top_stack_address = self.registers[SP]
         self.ram[top_stack_address] = value_in_register
 
@@ -75,15 +79,14 @@ class CPU:
         self.pc += 2
 
     def handle_mul(self, operand_a, operand_b):
-        # overwrite the first address value with new number
-        self.registers[operand_a] = self.registers[operand_a] * self.registers[operand_b] 
-        self.pc += 3
+        self.op_helper("MUL")
 
     def handle_add(self, operand_a, operand_b):
-        self.registers[operand_a] += self.registers[operand_b]
-        self.pc += 3
+        self.op_helper("ADD")
 
     def handle_call(self, operand_a, operand_b):
+        given_register = self.ram[self.pc + 1]
+
         # decrement the stack pointer
         self.registers[SP] -= 1
         
@@ -95,14 +98,14 @@ class CPU:
 
         # find the register that we'll be calling from and the address that is in that register
         # register_to_call = self.ram[self.pc + 1]
-        next_address = self.registers[operand_a]
+        next_address = self.registers[given_register]
 
         # set the pc to the next address
         self.pc = next_address
 
     def handle_ret(self, operand_a, operand_b):
         # pop the stack pointer from the reg
-        address_to_pop = self.ram[SP]
+        address_to_pop = self.ram[self.registers[SP]]
 
         # set the pc to that address
         self.pc = address_to_pop
@@ -146,33 +149,21 @@ class CPU:
             print(f"{sys.argv[0]} {sys.argv[1]} file not found")
             sys.exit(2)
 
-        # address = 0
-
-        # # For now, we've just hardcoded a program:
-
-        # program = [
-        #     # From print8.ls8
-        #     0b10000010, # LDI R0,8
-        #     0b00000000,
-        #     0b00001000,
-        #     0b01000111, # PRN R0
-        #     0b00000000,
-        #     0b00000001, # HLT
-        # ]
-
-        # for instruction in program:
-        #     self.ram[address] = instruction
-        #     address += 1
-
-
     def alu(self, op, reg_a, reg_b):
         """ALU operations."""
 
         if op == "ADD":
-            self.reg[reg_a] += self.reg[reg_b]
+            self.registers[reg_a] += self.registers[reg_b]
         #elif op == "SUB": etc
         else:
             raise Exception("Unsupported ALU operation")
+
+    def op_helper(self, op):
+        operand_a = self.ram_read(self.pc + 1)
+        operand_b = self.ram_read(self.pc + 2)
+        self.alu(op, operand_a, operand_b)
+        self.pc += 3
+
 
     def trace(self):
         """
@@ -195,9 +186,9 @@ class CPU:
         print()
 
     def run(self):
-        running = True
+        self.running = True
  
-        while running:
+        while self.running:
             # read line by line from memory
             instruction = self.ram_read(self.pc)
 
